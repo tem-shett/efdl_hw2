@@ -94,6 +94,9 @@ def run_training(rank, size, gradient_accumulation=2):
     for _ in range(10):
         epoch_loss = torch.zeros((1,), device=device)
 
+        sum_loss = 0
+        sum_acc = 0
+        sum_B = 0
         for i, data, target in enumerate(loader):
             data = data.to(device)
             target = target.to(device)
@@ -109,9 +112,17 @@ def run_training(rank, size, gradient_accumulation=2):
 
             acc = (output.argmax(dim=1) == target).float().mean()
 
-            print(f"Rank {dist.get_rank()}, loss: {epoch_loss / num_batches}, acc: {acc}")
-            epoch_loss = 0
-        # where's the validation loop?
+            B = data.shape[0]
+            tensor = torch.concat([loss.clone().detach() * B, acc.clone().detach() * B, torch.tensor([B])])
+            dist.all_reduce(tensor=tensor, op=dist.ReduceOp.SUM)
+
+            sum_loss += tensor[0].item()
+            sum_acc += tensor[1].item()
+            sum_B += tensor[2].item()
+        # where's the validation loop
+        
+        if rank == 0:
+            print(f"loss: {sum_loss / sum_B}, acc: {sum_acc / sum_B}")
     
     if rank == 0:
         print(f"Peak memory: {peak_memory / 1024**2}MB")
