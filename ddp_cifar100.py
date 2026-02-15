@@ -97,7 +97,8 @@ def run_training(rank, size, gradient_accumulation=2):
         sum_loss = 0
         sum_acc = 0
         sum_B = 0
-        for i, data, target in enumerate(loader):
+        for i, datatarget in enumerate(loader):
+            data, target = datatarget
             data = data.to(device)
             target = target.to(device)
 
