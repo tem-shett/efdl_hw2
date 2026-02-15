@@ -115,7 +115,7 @@ def run_training(rank, size, gradient_accumulation=2):
             acc = (output.argmax(dim=1) == target).float().mean()
 
             B = data.shape[0]
-            tensor = torch.concat([loss.clone().detach() * B, acc.clone().detach() * B, torch.tensor([B])])
+            tensor = torch.concat([loss.clone().detach() * B, acc.clone().detach() * B, torch.tensor([B], device=device)])
             dist.all_reduce(tensor=tensor, op=dist.ReduceOp.SUM)
 
             sum_loss += tensor[0].item()
