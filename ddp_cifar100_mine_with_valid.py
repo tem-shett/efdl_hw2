@@ -80,6 +80,8 @@ def validation(rank, size, model, batch_size):
 
     shard_size = len(valid_dataset) // size
 
+    scatter_inputs = None
+    scatter_targets = None
     if rank == 0:
         inputs, targets = next(iter(DataLoader(valid_dataset, batch_size=len(valid_dataset))))
         scatter_inputs = list(inputs[:shard_size * size].to(device).chunk(size))
