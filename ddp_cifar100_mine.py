@@ -8,6 +8,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision.datasets import CIFAR100
+
 from syncbn import SyncBatchNorm
 
 torch.set_num_threads(1)
@@ -90,7 +91,7 @@ def run_training(rank, size, gradient_accumulation=2):
     num_batches = len(loader)
 
     start_time = time.time()
-    peak_memory = 0
+    torch.cuda.reset_peak_memory_stats(device)
 
     for _ in range(10):
         epoch_loss = torch.zeros((1,), device=device)
@@ -121,15 +122,14 @@ def run_training(rank, size, gradient_accumulation=2):
             sum_loss += tensor[0].item()
             sum_acc += tensor[1].item()
             sum_B += tensor[2].item()
-            
-            peak_memory = max(peak_memory, torch.cuda.max_memory_allocated(device))
         # where's the validation loop
         
         if rank == 0:
             print(f"loss: {sum_loss / sum_B}, acc: {sum_acc / sum_B}")
     
+    print(f"Rank={rank} peak memory: {torch.cuda.max_memory_allocated(device) / 1024**2}MB")
+
     if rank == 0:
-        print(f"Peak memory: {peak_memory / 1024**2}MB")
         print(f"Time: {time.time() - start_time}")
 
 
