@@ -23,7 +23,7 @@ def benchmark_fn(rank, world_size):
     for d in hid_dims:
         for b in batch_sizes:
             torch.cuda.empty_cache()
-            model = nn.SyncBatchNorm(d, affine=True).to(device)
+            model = nn.SyncBatchNorm(d, affine=False).to(device)
             model.train()
             x = torch.randn(b, d, 128, device=device, requires_grad=True)
             for _ in range(WARMUP):
