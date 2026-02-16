@@ -26,7 +26,7 @@ def benchmark_fn(rank, world_size):
             torch.cuda.empty_cache()
             model = SyncBatchNorm(d).to(device)
             model.train()
-            x = torch.randn(b, d, 128, device=device, requires_grad=True)
+            x = torch.randn(b, d, device=device, requires_grad=True)
             for _ in range(WARMUP):
                 out = model(x)
                 out.sum().backward()
