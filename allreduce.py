@@ -23,7 +23,8 @@ def butterfly_allreduce(send, rank, size):
         size: Number of workers
     """
 
-    buffer_for_chunk = torch.empty((size,), dtype=torch.float)
+    buffer_for_chunk = torch.empty((size,send.shape[0]//size), dtype=torch.float)
+    send = list(torch.chunk(send, size, dim=0))
 
     send_futures = []
 
@@ -69,7 +70,25 @@ def ring_allreduce(send, rank, size):
         rank: Current process rank (in a range from 0 to size)
         size: Number of workers
     """
-    pass
+    chunks = list(torch.chunk(send, size, dim=0))
+
+    for i in range(size - 1):
+        send_future = dist.isend(chunks[(rank - i - 1) % size], (rank+1)%size)
+        res = torch.empty_like(chunks[(rank - i - 2) % size])
+        recv_future = dist.irecv(res, (rank-1)%size)
+        recv_future.wait()
+        send_future.wait()
+        chunks[(rank - i - 2) % size] += res
+    
+    chunks[rank] /= size
+
+    for i in range(size - 1):
+        send_future = dist.isend(chunks[(rank - i) % size], (rank+1)%size)
+        recv_future = dist.irecv(chunks[(rank - i - 1) % size], (rank-1)%size)
+        recv_future.wait()
+        send_future.wait()
+    
+    # send[:] = torch.concat(chunks)
 
 
 def run_butterfly_allreduce(rank, size):
@@ -80,13 +99,31 @@ def run_butterfly_allreduce(rank, size):
     butterfly_allreduce(tensor, rank, size)
     print("Rank ", rank, " has data ", tensor)
 
+def run_ring_allreduce(rank, size):
+    torch.manual_seed(rank)
+    tensor = torch.randn((size * 5 + 1,), dtype=torch.float)
+    garbage = torch.tensor(1)
+    if rank != 0:
+        dist.recv(garbage, rank - 1)
+    print("Rank ", rank, " has data ", tensor)
+    if rank != size - 1:
+        dist.send(garbage, rank + 1)
+    ring_allreduce(tensor, rank, size)
+    if rank != 0:
+        dist.recv(garbage, rank - 1)
+    else:
+        print("After ring allreduce:")
+    print("Rank ", rank, " has data ", tensor)
+    if rank != size - 1:
+        dist.send(garbage, rank + 1)
+
 
 if __name__ == "__main__":
     size = 5
     processes = []
     port = random.randint(25000, 30000)
     for rank in range(size):
-        p = Process(target=init_process, args=(rank, size, run_butterfly_allreduce, port))
+        p = Process(target=init_process, args=(rank, size, run_ring_allreduce, port))
         p.start()
         processes.append(p)
 
