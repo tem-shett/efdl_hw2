@@ -64,7 +64,7 @@ def average_gradients(model):
 
 def validation(rank, size, model, batch_size):
     model.eval()
-    device = model.device
+    device = next(model.parameters()).device
     
     valid_dataset = CIFAR100(
         "./cifar",
