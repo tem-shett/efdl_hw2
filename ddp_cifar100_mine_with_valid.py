@@ -89,9 +89,9 @@ def validation(rank, size, model, batch_size):
 
     input = torch.zeros((shard_size, *valid_dataset[0][0].shape), device=device)
     if isinstance(valid_dataset[0][1], int):
-        target = torch.zeros((shard_size,), device=device)
+        target = torch.zeros((shard_size,), dtype=torch.int64, device=device)
     else:
-        target = torch.zeros((shard_size, *valid_dataset[0][1].shape), device=device)
+        target = torch.zeros((shard_size, *valid_dataset[0][1].shape), dtype=torch.int64, device=device)
     dist.scatter(input, scatter_inputs, src=0)
     dist.scatter(target, scatter_targets, src=0)
 
