@@ -89,17 +89,17 @@ def validation(rank, size, model, batch_size):
 
     input = torch.zeros((shard_size, *valid_dataset[0][0].shape), device=device)
     if isinstance(valid_dataset[0][1], int):
-        target = torch.zeros((shard_size,), dtype=torch.int64, device=device)
+        targets = torch.zeros((shard_size,), dtype=torch.int64, device=device)
     else:
-        target = torch.zeros((shard_size, *valid_dataset[0][1].shape), dtype=torch.int64, device=device)
+        targets = torch.zeros((shard_size, *valid_dataset[0][1].shape), dtype=torch.int64, device=device)
     dist.scatter(input, scatter_inputs, src=0)
-    dist.scatter(target, scatter_targets, src=0)
+    dist.scatter(targets, scatter_targets, src=0)
 
     correct = 0
     with torch.no_grad():
         for i in range(0, shard_size, batch_size):
             data = input[i:i+batch_size]
-            target = target[i:i+batch_size]
+            target = targets[i:i+batch_size]
             output = model(data)
             pred = output.argmax(dim=1)
             correct += pred.eq(target).sum().item()
