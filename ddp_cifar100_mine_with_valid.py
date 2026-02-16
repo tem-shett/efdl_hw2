@@ -86,8 +86,8 @@ def validation(rank, size, model, batch_size):
         scatter_targets = list(targets[:shard_size * size].to(device).chunk(size))
 
     input = torch.zeros((shard_size, *valid_dataset[0][0].shape), device=device)
-    if isinstance(valid_dataset[0][1].shape, int):
-        target = torch.zeros((shard_size, valid_dataset[0][1].shape), device=device)
+    if isinstance(valid_dataset[0][1], int):
+        target = torch.zeros((shard_size,), device=device)
     else:
         target = torch.zeros((shard_size, *valid_dataset[0][1].shape), device=device)
     dist.scatter(input, scatter_inputs, src=0)
