@@ -121,6 +121,8 @@ def run_training(rank, size, gradient_accumulation=2):
             sum_loss += tensor[0].item()
             sum_acc += tensor[1].item()
             sum_B += tensor[2].item()
+            
+            peak_memory = max(peak_memory, torch.cuda.max_memory_allocated(device))
         # where's the validation loop
         
         if rank == 0:
