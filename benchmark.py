@@ -7,8 +7,6 @@ import torch.multiprocessing as mp
 import torch.utils.benchmark as benchmark
 
 def benchmark_fn(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = str(random.randint(25000, 30000))
     # Настройка окружения
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
     device = torch.device(f"cuda:{rank}")
@@ -66,5 +64,7 @@ def benchmark_fn(rank, world_size):
 if __name__ == "__main__":
     # Запускаем 2 процесса для эмуляции распределенной работы
     # Даже на одном GPU или CPU это заставит SyncBN выполнять сетевую синхронизацию
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = str(random.randint(25000, 30000))
     world_size = 2
     mp.spawn(benchmark_fn, args=(world_size,), nprocs=world_size, join=True)
